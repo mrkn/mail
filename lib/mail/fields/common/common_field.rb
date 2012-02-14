@@ -2,6 +2,8 @@
 module Mail
   module CommonField # :nodoc:
 
+    RFC5322_LINE_LIMITS = 78
+
     def name=(value)
       @name = value
     end

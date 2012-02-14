@@ -66,6 +66,7 @@ describe Mail::UnstructuredField do
     
     it "should just add the CRLF at the end of the line" do
       @field = Mail::SubjectField.new("Subject: =?utf-8?Q?testing_testing_=D6=A4?=")
+      @field.encoding = 'quoted-printable'
       result = "Subject: =?UTF8?Q?testing_testing_=D6=A4?=\r\n"
       @field.encoded.gsub("UTF-8", "UTF8").should eq result
       @field.decoded.should eq "testing testing \326\244"
@@ -73,6 +74,7 @@ describe Mail::UnstructuredField do
 
     it "should do encoded-words encoding correctly without extra equal sign" do
       @field = Mail::SubjectField.new("testing testing æøå")
+      @field.encoding = 'quoted-printable'
       result = "Subject: =?UTF8?Q?testing_testing_=C3=A6=C3=B8=C3=A5?=\r\n"
       @field.encoded.gsub("UTF-8", "UTF8").should eq result
       @field.decoded.should eq "testing testing æøå"
@@ -80,6 +82,7 @@ describe Mail::UnstructuredField do
     
     it "should encode the space between two adjacent encoded-words" do
       @field = Mail::SubjectField.new("Her er æ ø å")
+      @field.encoding = 'quoted-printable'
       result = "Subject: =?UTF8?Q?Her_er_=C3=A6_=C3=B8_=C3=A5?=\r\n"
       @field.encoded.gsub("UTF-8", "UTF8").should eq result
       @field.decoded.should eq "Her er æ ø å"
@@ -88,6 +91,7 @@ describe Mail::UnstructuredField do
     it "should encode additional special characters inside encoded-word-encoded strings" do
       string = %Q(Her er æ()<>@,;:\\"/[]?.=)
       @field = Mail::SubjectField.new(string)
+      @field.encoding = 'quoted-printable'
       result = %Q(Subject: =?UTF8?Q?Her_er_=C3=A6=28=29<>@,;:\\=22/[]=3F.=3D?=\r\n)
       @field.encoded.gsub("UTF-8", "UTF8").should eq result
       @field.decoded.should eq string
@@ -131,6 +135,7 @@ describe Mail::UnstructuredField do
       @original = $KCODE if RUBY_VERSION < '1.9'
       string = "This is あ really long string This is あ really long string This is あ really long string This is あ really long string This is あ really long string"
       @field = Mail::UnstructuredField.new("Subject", string)
+      @field.encoding = 'quoted-printable'
       if string.respond_to?(:force_encoding)
         string = string.force_encoding('UTF-8')
       else
@@ -146,6 +151,7 @@ describe Mail::UnstructuredField do
       @original = $KCODE if RUBY_VERSION < '1.9'
       string = %|{"unique_args": {"mailing_id":147,"account_id":2}, "to": ["larspind@gmail.com"], "category": "mailing", "filters": {"domainkeys": {"settings": {"domain":1,"enable":1}}}, "sub": {"{{open_image_url}}": ["http://betaling.larspind.local/O/token/147/Mailing::FakeRecipient"], "{{name}}": ["[FIRST NAME]"], "{{signup_reminder}}": ["(her kommer til at stå hvornår folk har skrevet sig op ...)"], "{{unsubscribe_url}}": ["http://betaling.larspind.local/U/token/147/Mailing::FakeRecipient"], "{{email}}": ["larspind@gmail.com"], "{{link:308}}": ["http://betaling.larspind.local/L/308/0/Mailing::FakeRecipient"], "{{confirm_url}}": [""], "{{ref}}": ["[REF]"]}}|
       @field = Mail::UnstructuredField.new("X-SMTPAPI", string)
+      @field.encoding = 'quoted-printable'
       if string.respond_to?(:force_encoding)
         string = string.force_encoding('UTF-8')
       else
@@ -167,12 +173,57 @@ describe Mail::UnstructuredField do
     end
   end
 
-  describe "iso-2022-jp Subject" do
-    it "should encoded with ISO-2022-JP encoding" do
-      @field = Mail::UnstructuredField.new("Subject", "あいうえお")
-      @field.charset = 'iso-2022-jp'
-      expect = (RUBY_VERSION < '1.9') ? "Subject: =?ISO-2022-JP?Q?=E3=81=82=E3=81=84=E3=81=86=E3=81=88=E3=81=8A?=\r\n" : "Subject: =?ISO-2022-JP?Q?=1B$B$=22$$$&$=28$*=1B=28B?=\r\n"
-      @field.encoded.should eq expect
+  describe "unstructured field includes few non-ascii characters" do
+    let(:subject_text) { "This is NOT plain text US-ASCII - あ" }
+
+    context "charset is UTF-8" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'UTF-8'
+        expect = "Subject: =?UTF-8?Q?This_is_NOT_plain_text_US-ASCII_-_=E3=81=82?=\r\n"
+        @field.encoded.should eq expect
+      end
+    end
+
+    context "charset is ISO-2022-JP" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'ISO-2022-JP'
+        if RUBY_VERSION >= '1.9'
+          expect = "Subject: =?ISO-2022-JP?Q?This_is_NOT_plain_text_US-ASCII_-_=1B$B$=22=1B=28B?=\r\n"
+        else
+          # TODO: fix for 1.8
+          expect = "Subject: =?ISO-2022-JP?Q?This_is_NOT_plain_text_US-ASCII_-_=E3=81=82?=\r\n"
+        end
+        @field.encoded.should eq expect
+      end
+    end
+  end
+
+  describe "unstructured field almost consists of non-ascii characters" do
+    let(:subject_text) { "US-ASCII の plain text ではありません - かきくけこ" }
+
+    context "charset is UTF-8" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'UTF-8'
+        expect = "Subject: =?UTF-8?B?VVMtQVNDSUkg44GuIHBsYWluIHRleHQg44Gn44Gv44GC44KK44G+44Gb?=\r\n =?UTF-8?B?44KTIC0g44GL44GN44GP44GR44GT?=\r\n"
+        @field.encoded.should eq expect
+      end
+    end
+
+    context "charset is ISO-2022-JP" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'ISO-2022-JP'
+        if RUBY_VERSION >= '1.9'
+          expect = "Subject: =?ISO-2022-JP?B?VVMtQVNDSUkgGyRCJE4bKEIgcGxhaW4gdGV4dCA=?=\r\n =?ISO-2022-JP?B?GyRCJEckTyQiJGokXiQ7JHMbKEIgLSAbJEIkKyQtJC8kMSQzGyhC?=\r\n"
+        else
+          # TODO: fix for 1.8
+          expect = "Subject: =?ISO-2022-JP?B?VVMtQVNDSUkg44GuIHBsYWluIHRleHQg44Gn44Gv44GC44KK?=\r\n =?ISO-2022-JP?B?44G+44Gb44KTIC0g44GL44GN44GP44GR44GT?=\r\n"
+        end
+        @field.encoded.should eq expect
+      end
     end
   end
 end

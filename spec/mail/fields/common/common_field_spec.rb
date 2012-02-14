@@ -29,6 +29,7 @@ describe Mail::CommonField do
         result = "Subject: =?UTF-8?Q?=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n"
       end
       field = Mail::SubjectField.new(value)
+      field.encoding = 'quoted-printable'
       field.encoded.should eq result
       field.decoded.should eq value
       field.value.should eq value
@@ -44,6 +45,7 @@ describe Mail::CommonField do
         result = "Subject: =?UTF-8?Q?=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n\s=?UTF-8?Q?_=E3=81=8B=E3=81=8D=E3=81=8F=E3=81=91=E3=81=93?=\r\n"
       end
       field = Mail::SubjectField.new(value)
+      field.encoding = 'quoted-printable'
       field.encoded.should eq result
       field.decoded.should eq value
       field.value.should eq value

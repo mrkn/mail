@@ -35,7 +35,28 @@ module Mail
       end
       self.name = name
       self.value = value
+      @encoding = (only_ascii_printable? ? '7bit' : '8bit')
       self
+    end
+
+    def only_ascii_printable?
+      !(self.value =~ /[^\x20-\x7e]/)
+    end
+
+    def encoding(val = nil)
+      if val
+        self.encoding = val
+      else
+        @encoding
+      end
+    end
+
+    def encoding=(val)
+      @encoding = if val == "text" || val.blank?
+        (only_ascii_printable? ? '7bit' : '8bit')
+      else
+        val
+      end
     end
    
     def encoded
@@ -111,9 +132,20 @@ module Mail
     end
 
     def fold(prepend = 0) # :nodoc:
-      encoding       = normalized_encoding
+      decoded_string = decoded.to_s
+      best_encoding = get_best_encoding(decoded_string)
+      case best_encoding.to_s
+      when 'base64'
+        fold_by_base64(prepend)
+      else
+        fold_by_quoted_printable(prepend)
+      end
+    end
+
+    def fold_by_quoted_printable(prepend) # :nodoc:
       decoded_string = decoded.to_s
       should_encode  = decoded_string.not_ascii_only?
+      encoding       = normalized_encoding
       if should_encode
         first = true
         words = decoded_string.split(/[ \t]/).map do |word|
@@ -134,14 +166,14 @@ module Mail
       
       folded_lines   = []
       while !words.empty?
-        limit = 78 - prepend
+        limit = RFC5322_LINE_LIMITS - prepend
         limit = limit - 7 - encoding.length if should_encode
         line = ""
         while !words.empty?
           break unless word = words.first.dup
           word.encode!(charset) if defined?(Encoding) && charset
-          word = encode(word) if should_encode
-          word = encode_crlf(word)
+          word = encode_by_quoted_printable(word) if should_encode
+          word = encode_crlf_by_quoted_printable(word)
           # Skip to next line if we're going to go past the limit
           # Unless this is the first word, in which case we're going to add it anyway
           # Note: This means that a word that's longer than 998 characters is going to break the spec. Please fix if this is a problem for you.
@@ -164,7 +196,7 @@ module Mail
       folded_lines
     end
  
-    def encode(value)
+    def encode_by_quoted_printable(value)
       value = [value].pack("M").gsub("=\n", '')
       value.gsub!(/"/,  '=22')
       value.gsub!(/\(/, '=28')
@@ -175,10 +207,46 @@ module Mail
       value
     end
 
-    def encode_crlf(value)
+    def encode_crlf_by_quoted_printable(value)
       value.gsub!("\r", '=0D')
       value.gsub!("\n", '=0A')
       value
+    end
+
+    def fold_by_base64(prepend) # :nodoc:
+      decoded_string = decoded.to_s
+      should_encode  = decoded_string.not_ascii_only?
+      chars          = decoded_string.scan(/./)
+      encoding       = normalized_encoding
+
+      chars.inject([""]) do |folded_lines, char|
+        last_line = folded_lines.last
+        trial_line = last_line + char
+        trial_line.encode!(charset) if defined?(Encoding) && charset
+        encoded_line = encode_by_base64(trial_line)
+        encoded_line, rest = *encoded_line.lines
+        limit = RFC5322_LINE_LIMITS - prepend
+        limit = limit - 7 - encoding.length if should_encode
+        if rest || encoded_line.length + 1 > limit
+          folded_lines << char
+          prepend = 0
+        else
+          last_line << char
+        end
+        folded_lines
+      end.map do |line|
+        line.encode!(charset) if defined?(Encoding) && charset
+        "=?#{encoding}?B?#{encode_by_base64(line)}?="
+      end
+    end
+
+    def encode_by_base64(value)
+      RubyVer.encode_base64(value).rstrip
+    end
+
+    def get_best_encoding(str)
+      target_encoding = Mail::Encodings.get_encoding('7bit')
+      target_encoding.get_best_compatible(encoding, str)
     end
 
     def normalized_encoding
