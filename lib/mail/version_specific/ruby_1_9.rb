@@ -87,6 +87,42 @@ module Mail
       "#{encoding}'#{language}'#{uri_parser.escape(str)}"
     end
 
+    ENCODINGS_COMPATIBLE_WITH_WAVE_DASH = %w[
+      ISO-2022-JP
+      Shift_JIS
+      EUC-JP
+    ].map {|name| Encoding.find(name) }.flatten.freeze
+
+    ENCODINGS_COMPATIBLE_WITH_FULL_WIDTH_TILDE = %w[
+      CP50220
+      CP50221
+      Windows-31J
+      CP51932
+      eucJP-ms
+    ].map {|name| Encoding.find(name) }.flatten.freeze
+
+    def Ruby19.encode_for_charset(str, charset)
+      charset = Encoding.find(charset) unless charset.is_a? Encoding
+      if str.encoding != charset
+        if ENCODINGS_COMPATIBLE_WITH_WAVE_DASH.include?(charset)
+          str = full_width_tilde_to_wave_dash(str) if str.encoding == Encoding::UTF_8
+        elsif ENCODINGS_COMPATIBLE_WITH_FULL_WIDTH_TILDE.include?(charset)
+          str = wave_dash_to_full_width_tilde(str) if str.encoding == Encoding::UTF_8
+        end
+        str = str.encode(charset)
+      end
+      str = wave_dash_to_full_width_tilde(str) if str.encoding == Encoding::UTF_8
+      str
+    end
+
+    def Ruby19.wave_dash_to_full_width_tilde(str)
+      str.gsub(/\u301C/, "\uFF5E")
+    end
+
+    def Ruby19.full_width_tilde_to_wave_dash(str)
+      str.gsub(/\uFF5E/, "\u301C")
+    end
+
     def Ruby19.uri_parser
       @uri_parser ||= URI::Parser.new
     end

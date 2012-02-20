@@ -17,7 +17,7 @@ module Mail
     end
     
     def encode_if_needed(val)
-      Encodings.address_encode(val, charset)
+      Encodings.address_encode(val, charset, encoding)
     end
     
     # Allows you to iterate through each address object in the syntax tree
@@ -89,9 +89,22 @@ module Mail
       super
       parse(self.value)
     end
-  
+
+    def encoding(val = nil)
+      if !defined?(@encoding) || @encoding.nil?
+        @encoding = 'base64'
+      else
+        super
+      end
+    end
+
+    def encoding=(val)
+      super
+      self.parse
+    end
+
     private
-  
+
     def do_encode(field_name)
       return '' if value.blank?
       address_array = tree.addresses.reject { |a| group_addresses.include?(a.encoded) }.compact.map { |a| a.encoded }
@@ -116,7 +129,7 @@ module Mail
     def tree # :nodoc:
       @tree ||= AddressList.new(value)
     end
-  
+
     def get_group_addresses(group_list)
       if group_list.respond_to?(:addresses)
         group_list.addresses.map do |address_tree|

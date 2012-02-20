@@ -1743,11 +1743,7 @@ describe Mail::Message do
           mail = Mail.new
           mail.charset = 'ISO-2022-JP'
           mail.subject = subject_text
-          if RUBY_VERSION >= '1.9'
-            expected_pattern = %r{^Subject: =\?ISO-2022-JP\?Q\?This_is_NOT_plain_text_US-ASCII_-_It_is_truth_that\?=\r\n =\?ISO-2022-JP\?Q\?_=1B\$B;x=1B=28B_is_not_=1B\$BG&<T=1B=28B\?=\r\n}m
-          else
-            expected_pattern = %r{^Subject: =\?ISO-2022-JP\?Q\?This_is_NOT_plain_text_US-ASCII_-_It_is_truth_that\?=\r\n =\?ISO-2022-JP\?Q\?_=E4=BE=8D_is_not_=E5=BF=8D=E8=80=85\?=\r\n}m
-          end
+          expected_pattern = %r{^Subject: =\?ISO-2022-JP\?Q\?This_is_NOT_plain_text_US-ASCII_-_It_is_truth_that\?=\r\n =\?ISO-2022-JP\?Q\?_=1B\$B;x=1B=28B_is_not_=1B\$BG&<T=1B=28B\?=\r\n}m
           mail.to_s.should =~ expected_pattern
         end
       end
@@ -1771,11 +1767,7 @@ describe Mail::Message do
           mail = Mail.new
           mail.charset = 'ISO-2022-JP'
           mail.subject = subject_text
-          if RUBY_VERSION >= '1.9'
-            expected_pattern = %r{^Subject: =\?ISO-2022-JP\?B\?VVMtQVNDSUkgGyRCJE4bKEIgcGxhaW4gdGV4dCA=\?=\r\n =\?ISO-2022-JP\?B\?GyRCJEckTyQiJGokXiQ7JHMbKEIgLSAbJEI8QiRPISI7eCRPRyYbKEI=\?=\r\n =\?ISO-2022-JP\?B\?GyRCPFQkRyRPJEokJCROJEckORsoQg==\?=\r\n}m
-          else
-            expected_pattern = %r{^Subject: =\?ISO-2022-JP\?B\?VVMtQVNDSUkg44GuIHBsYWluIHRleHQg44Gn44Gv44GC44KK\?=\r\n =\?ISO-2022-JP\?B\?44G\+44Gb44KTIC0g5a6f44Gv44CB5L6N44Gv5b\+N6ICF44Gn44Gv44Gq\?=\r\n =\?ISO-2022-JP\?B\?44GE44Gu44Gn44GZ\?=\r\n}m
-          end
+          expected_pattern = %r{^Subject: =\?ISO-2022-JP\?B\?VVMtQVNDSUkgGyRCJE4bKEIgcGxhaW4gdGV4dCA=\?=\r\n =\?ISO-2022-JP\?B\?GyRCJEckTyQiJGokXiQ7JHMbKEIgLSAbJEI8QiRPISI7eCRPRyYbKEI=\?=\r\n =\?ISO-2022-JP\?B\?GyRCPFQkRyRPJEokJCROJEckORsoQg==\?=\r\n}m
           mail.to_s.should =~ expected_pattern
         end
       end

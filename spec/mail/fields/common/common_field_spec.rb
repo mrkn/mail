@@ -61,6 +61,7 @@ describe Mail::CommonField do
         result = "From: =?UTF-8?B?44GL44GN44GP44GR44GT?= <mikel@test.lindsaar.net>\r\n"
       end
       field = Mail::FromField.new(value)
+      field.encoding = 'base64'
       field.encoded.should eq result
       field.decoded.should eq value
     end

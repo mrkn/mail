@@ -277,6 +277,7 @@ describe Mail::Encodings do
       original = "Слово 9999 и число"
       mail = Mail.new
       mail.subject = (RUBY_VERSION >= "1.9" ? original.encode('koi8-r') : original)
+      mail[:subject].encoding = 'quoted-printable'
       mail[:subject].charset = 'koi8-r'
       wrapped = mail[:subject].wrapped_value
       unwrapped = Mail::Encodings.value_decode(wrapped)
@@ -561,6 +562,18 @@ describe Mail::Encodings do
         Mail::Encodings.decode_encode(string, :encode).should eq result
       end
 
+      it "should encode a string into Quoted-Printable" do
+        string = "This is あ string"
+        if RUBY_VERSION >= '1.9'
+          result = '=?UTF-8?Q?This_is_=E3=81=82_string?='
+          result.force_encoding('UTF-8')
+        else
+          result = '=?UTF8?Q?This_is_=E3=81=82_string?='
+          $KCODE = 'UTF-8'
+        end
+        Mail::Encodings.decode_encode(string, :encode, 'quoted-printable').should eq result
+      end
+
       it "should leave a string that doesn't need encoding alone" do
         string = 'This is a string'
         result = "This is a string"
@@ -675,10 +688,22 @@ describe Mail::Encodings do
       Mail::Encodings.encode_non_usascii(raw, 'utf-8').should eq encoded
     end
 
+    it "should encode a display that contains non usascii by quoted-printable" do
+      raw     = 'Lindsああr <mikel@test.lindsaar.net>'
+      encoded = '=?UTF-8?Q?Linds=E3=81=82=E3=81=82r?= <mikel@test.lindsaar.net>'
+      Mail::Encodings.encode_non_usascii(raw, 'utf-8', 'quoted-printable').should eq encoded
+    end
+
     it "should encode a display that contains non usascii with quotes as no quotes" do
       raw     = '"Lindsああr" <mikel@test.lindsaar.net>'
       encoded = '=?UTF-8?B?TGluZHPjgYLjgYJy?= <mikel@test.lindsaar.net>'
       Mail::Encodings.encode_non_usascii(raw, 'utf-8').should eq encoded
+    end
+
+    it "should encode a display that contains non usascii by quoted-printable with quotes as no quotes" do
+      raw     = '"Lindsああr" <mikel@test.lindsaar.net>'
+      encoded = '=?UTF-8?Q?Linds=E3=81=82=E3=81=82r?= <mikel@test.lindsaar.net>'
+      Mail::Encodings.encode_non_usascii(raw, 'utf-8', 'quoted-printable').should eq encoded
     end
 
     it "should encode a display name with us-ascii and non-usascii parts" do
@@ -737,10 +762,22 @@ describe Mail::Encodings do
       Mail::Encodings.address_encode(raw, 'utf-8').should eq encoded
     end
 
+    it "should encode an address by quoted-printable correctly" do
+      raw     = '"Mikel Lindsああr" <mikel@test.lindsaar.net>'
+      encoded = '=?UTF-8?Q?Mikel_Linds=E3=81=82=E3=81=82r?= <mikel@test.lindsaar.net>'
+      Mail::Encodings.address_encode(raw, 'utf-8', 'quoted-printable').should eq encoded
+    end
+
     it "should encode multiple addresses correctly" do
       raw     = ['"Mikel Lindsああr" <mikel@test.lindsaar.net>', '"あdあ" <ada@test.lindsaar.net>']
       encoded = '=?UTF-8?B?TWlrZWwgTGluZHPjgYLjgYJy?= <mikel@test.lindsaar.net>, =?UTF-8?B?44GCZOOBgg==?= <ada@test.lindsaar.net>'
       Mail::Encodings.address_encode(raw, 'utf-8').should eq encoded
+    end
+
+    it "should encode multiple addresses by quoted-printable correctly" do
+      raw     = ['"Mikel Lindsああr" <mikel@test.lindsaar.net>', '"あdあ" <ada@test.lindsaar.net>']
+      encoded = '=?UTF-8?Q?Mikel_Linds=E3=81=82=E3=81=82r?= <mikel@test.lindsaar.net>, =?UTF-8?Q?=E3=81=82d=E3=81=82?= <ada@test.lindsaar.net>'
+      Mail::Encodings.address_encode(raw, 'utf-8', 'quoted-printable').should eq encoded
     end
 
     it "should handle a single ascii address correctly from a string" do

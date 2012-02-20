@@ -244,6 +244,17 @@ describe "Mail::CommonAddress" do
       field.decoded.should eq '"みける" <raasdnil@text.lindsaar.net>, "みける" <mikel@text.lindsaar.net>'
     end
 
+    it "should allow us to encode by quoted-printable" do
+      field = Mail::ToField.new('"みける" <raasdnil@text.lindsaar.net>, "みける" <mikel@text.lindsaar.net>')
+      field.encoding = 'quoted-printable'
+      field.encoded.should eq "To: =?UTF-8?Q?=E3=81=BF=E3=81=91=E3=82=8B?= <raasdnil@text.lindsaar.net>, \r\n =?UTF-8?Q?=E3=81=BF=E3=81=91=E3=82=8B?= <mikel@text.lindsaar.net>\r\n"
+    end
+
+    it "should allow us to encode by base64" do
+      field = Mail::ToField.new('"みける" <raasdnil@text.lindsaar.net>, "みける" <mikel@text.lindsaar.net>')
+      field.encoding = 'base64'
+      field.encoded.should eq "To: =?UTF-8?B?44G/44GR44KL?= <raasdnil@text.lindsaar.net>, \r\n =?UTF-8?B?44G/44GR44KL?= <mikel@text.lindsaar.net>\r\n"
+    end
   end
   
   it "should yield each address object in turn" do

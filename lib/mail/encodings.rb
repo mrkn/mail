@@ -95,7 +95,7 @@ module Mail
     # the value of $KCODE for Ruby < 1.9 or the encoding on the string passed in.
     #
     # On encoding, will only send out Base64 encoded strings.
-    def Encodings.decode_encode(str, output_type)
+    def Encodings.decode_encode(str, output_type, encoding = 'base64')
       case
       when output_type == :decode
         Encodings.value_decode(str)
@@ -103,7 +103,12 @@ module Mail
         if str.ascii_only?
           str
         else
-          Encodings.b_value_encode(str, find_encoding(str))
+          case encoding
+          when 'quoted-printable'
+            Encodings.q_value_encode(str, find_encoding(str))
+          else
+            Encodings.b_value_encode(str, find_encoding(str))
+          end
         end
       end
     end
@@ -175,21 +180,28 @@ module Mail
       end
     end
 
-    def Encodings.address_encode(address, charset = 'utf-8')
+    def Encodings.address_encode(address, charset = 'utf-8', encoding = 'base64')
       if address.is_a?(Array)
         # loop back through for each element
-        address.map { |a| Encodings.address_encode(a, charset) }.join(", ")
+        address.map { |a| Encodings.address_encode(a, charset, encoding) }.join(", ")
       else
         # find any word boundary that is not ascii and encode it
-        encode_non_usascii(address, charset)
+        encode_non_usascii(address, charset, encoding)
       end
     end
 
-    def Encodings.encode_non_usascii(address, charset)
+    def Encodings.encode_non_usascii(address, charset, encoding = 'base64')
       return address if address.ascii_only? or charset.nil?
       us_ascii = %Q{\x00-\x7f}
       # Encode any non usascii strings embedded inside of quotes
-      address = address.gsub(/(".*?[^#{us_ascii}].*?")/) { |s| Encodings.b_value_encode(unquote(s), charset) }
+      address = address.gsub(/(".*?[^#{us_ascii}].*?")/) do |s|
+        case encoding
+        when 'quoted-printable'
+          Encodings.q_value_encode(unquote(s), charset)
+        else
+          Encodings.b_value_encode(unquote(s), charset)
+        end
+      end
       # Then loop through all remaining items and encode as needed
       tokens = address.split(/\s/)
       map_with_index(tokens) do |word, i|
@@ -200,7 +212,12 @@ module Mail
           if previous_non_ascii
             word = " #{word}"
           end
-          Encodings.b_value_encode(word, charset)
+          case encoding
+          when 'quoted-printable'
+            Encodings.q_value_encode(word, charset)
+          else
+            Encodings.b_value_encode(word, charset)
+          end
         end
       end.join(' ')
     end

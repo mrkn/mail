@@ -189,12 +189,7 @@ describe Mail::UnstructuredField do
       it "should encode in Base64" do
         @field = Mail::UnstructuredField.new("Subject", subject_text)
         @field.charset = 'ISO-2022-JP'
-        if RUBY_VERSION >= '1.9'
-          expect = "Subject: =?ISO-2022-JP?Q?This_is_NOT_plain_text_US-ASCII_-_=1B$B$=22=1B=28B?=\r\n"
-        else
-          # TODO: fix for 1.8
-          expect = "Subject: =?ISO-2022-JP?Q?This_is_NOT_plain_text_US-ASCII_-_=E3=81=82?=\r\n"
-        end
+        expect = "Subject: =?ISO-2022-JP?Q?This_is_NOT_plain_text_US-ASCII_-_=1B$B$=22=1B=28B?=\r\n"
         @field.encoded.should eq expect
       end
     end
@@ -216,12 +211,7 @@ describe Mail::UnstructuredField do
       it "should encode in Base64" do
         @field = Mail::UnstructuredField.new("Subject", subject_text)
         @field.charset = 'ISO-2022-JP'
-        if RUBY_VERSION >= '1.9'
-          expect = "Subject: =?ISO-2022-JP?B?VVMtQVNDSUkgGyRCJE4bKEIgcGxhaW4gdGV4dCA=?=\r\n =?ISO-2022-JP?B?GyRCJEckTyQiJGokXiQ7JHMbKEIgLSAbJEIkKyQtJC8kMSQzGyhC?=\r\n"
-        else
-          # TODO: fix for 1.8
-          expect = "Subject: =?ISO-2022-JP?B?VVMtQVNDSUkg44GuIHBsYWluIHRleHQg44Gn44Gv44GC44KK?=\r\n =?ISO-2022-JP?B?44G+44Gb44KTIC0g44GL44GN44GP44GR44GT?=\r\n"
-        end
+        expect = "Subject: =?ISO-2022-JP?B?VVMtQVNDSUkgGyRCJE4bKEIgcGxhaW4gdGV4dCA=?=\r\n =?ISO-2022-JP?B?GyRCJEckTyQiJGokXiQ7JHMbKEIgLSAbJEIkKyQtJC8kMSQzGyhC?=\r\n"
         @field.encoded.should eq expect
       end
     end

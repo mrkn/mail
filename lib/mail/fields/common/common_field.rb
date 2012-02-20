@@ -39,6 +39,28 @@ module Mail
       name.to_s.downcase == val.to_s.downcase
     end
 
+    def encoding(val = nil)
+      if val
+        self.encoding = val
+      elsif !defined?(@encoding) || @encoding.nil?
+        self.encoding = "text"
+      else
+        @encoding
+      end
+    end
+
+    def encoding=(val)
+      @encoding = if val == "text" || val.blank?
+        (only_ascii_printable? ? '7bit' : '8bit')
+      else
+        val
+      end
+    end
+
+    def only_ascii_printable?
+      !(self.value =~ /[^\x20-\x7e]/)
+    end
+
     private
 
     def strip_field(field_name, value)

@@ -94,5 +94,56 @@ module Mail
       language = Configuration.instance.param_encode_language
       "#{encoding}'#{language}'#{URI.escape(str)}"
     end
+
+    def Ruby18.encode_for_charset(str, charset)
+      charset = normalize_charset(charset)
+      case $KCODE
+      when 'UTF8'
+        str = wave_dash_to_full_width_tilde(str)
+        opt = case charset
+        when 'ISO-2022-JP'
+          '-jW --cp932'
+        when 'SHIFT-JIS'
+          '-sW --cp932'
+        when 'EUC-JP'
+          '-eW --cp932'
+        end
+      when 'SJIS'
+        opt = case charset
+        when 'UTF-8'
+          '-wS --cp932'
+        when 'ISO-2022-JP'
+          '-jS'
+        when 'EUC-JP'
+          '-eS'
+        end
+      when 'EUC'
+        opt = case charset
+        when 'UTF-8'
+          '-wE --cp932'
+        when 'ISO-2022-JP'
+          '-jE'
+        when 'SHIFT-JIS'
+          '-sE'
+        end
+      end
+      if opt
+        NKF.nkf(opt, str)
+      else
+        str
+      end
+    end
+
+    def Ruby18.normalize_charset(charset)
+      charset.gsub('_', '-').upcase
+    end
+
+    class << self
+      private :normalize_charset
+    end
+
+    def Ruby18.wave_dash_to_full_width_tilde(str)
+      str.gsub(/\xE3\x80\x9C/, "\xEF\xBD\x9E")
+    end
   end
 end

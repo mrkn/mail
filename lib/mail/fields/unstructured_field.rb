@@ -35,28 +35,12 @@ module Mail
       end
       self.name = name
       self.value = value
-      @encoding = (only_ascii_printable? ? '7bit' : '8bit')
+      self.encoding = (only_ascii_printable? ? '7bit' : '8bit')
       self
     end
 
     def only_ascii_printable?
       !(self.value =~ /[^\x20-\x7e]/)
-    end
-
-    def encoding(val = nil)
-      if val
-        self.encoding = val
-      else
-        @encoding
-      end
-    end
-
-    def encoding=(val)
-      @encoding = if val == "text" || val.blank?
-        (only_ascii_printable? ? '7bit' : '8bit')
-      else
-        val
-      end
     end
    
     def encoded
@@ -171,7 +155,7 @@ module Mail
         line = ""
         while !words.empty?
           break unless word = words.first.dup
-          word.encode!(charset) if defined?(Encoding) && charset
+          word = encode_for_charset(word, charset) if charset
           word = encode_by_quoted_printable(word) if should_encode
           word = encode_crlf_by_quoted_printable(word)
           # Skip to next line if we're going to go past the limit
@@ -222,7 +206,7 @@ module Mail
       chars.inject([""]) do |folded_lines, char|
         last_line = folded_lines.last
         trial_line = last_line + char
-        trial_line.encode!(charset) if defined?(Encoding) && charset
+        trial_line = encode_for_charset(trial_line, charset) if charset
         encoded_line = encode_by_base64(trial_line)
         encoded_line, rest = *encoded_line.lines
         limit = RFC5322_LINE_LIMITS - prepend
@@ -235,9 +219,13 @@ module Mail
         end
         folded_lines
       end.map do |line|
-        line.encode!(charset) if defined?(Encoding) && charset
+        line = encode_for_charset(line, charset) if charset
         "=?#{encoding}?B?#{encode_by_base64(line)}?="
       end
+    end
+
+    def encode_for_charset(value, charset)
+      RubyVer.encode_for_charset(value, charset)
     end
 
     def encode_by_base64(value)
