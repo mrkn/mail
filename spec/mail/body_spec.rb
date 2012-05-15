@@ -384,11 +384,56 @@ describe Mail::Body do
   end
 
   describe "non US-ASCII charset" do
-    it "should encoded" do
-      body = Mail::Body.new("あいうえお\n")
-      body.charset = 'iso-2022-jp'
-      expect = (RUBY_VERSION < '1.9') ? "あいうえお\r\n" : "\e$B$\"$$$&$($*\e(B\r\n"
-      body.encoded.should == expect
+    context "when charset = 'iso-2022-jp'" do
+      context "when the body initialized with a ISO-2022-JP string" do
+        let(:body_source) do
+          # this is 'あいうえお\n' in ISO-2022-JP
+          "\e$B$\"$$$&$($*\e(B\n".tap do |s|
+            s.force_encoding('ISO-2022-JP') if s.respond_to?(:force_encoding)
+          end
+        end
+
+        it "should encoded" do
+          body = Mail::Body.new(body_source)
+          body.charset = 'iso-2022-jp'
+          expect = "\e$B$\"$$$&$($*\e(B\r\n"
+          body.encoded.should == expect
+        end
+      end
+
+      context "when the body initialized with an array with two ISO-2022-JP strings" do
+        let(:body_sources) do
+          # this is [ "あいうえお\n", "ＡＢＣＤＥ\n" ] in ISO-2022-JP
+          [ "\e$B$\"$$$&$($*\e(B\n", "\e$B#A#B#C#D#E\e(B\n" ].map do |s|
+            s.tap {|s| s.force_encoding('ISO-2022-JP') if s.respond_to?(:force_encoding) }
+          end
+        end
+
+        it "should encoded" do
+          body = Mail::Body.new(body_sources)
+          body.charset = 'iso-2022-jp'
+          expect = "\e$B$\"$$$&$($*\e(B\r\n\e$B#A#B#C#D#E\e(B\r\n"
+          body.encoded.should == expect
+        end
+      end
+
+      context "when the body initialized with a UTF-8 string" do
+        it "should encoded" do
+          body = Mail::Body.new("あいうえお\n")
+          body.charset = 'iso-2022-jp'
+          expect = (RUBY_VERSION < '1.9') ? "あいうえお\r\n" : "\e$B$\"$$$&$($*\e(B\r\n"
+          body.encoded.should == expect
+        end
+      end
+
+      context "when the body initialized with an array of two UTF-8 string" do
+        it "should encoded" do
+          body = Mail::Body.new(["あいうえお\n", "ＡＢＣＤＥ\n"])
+          body.charset = 'iso-2022-jp'
+          expect = (RUBY_VERSION < '1.9') ? "あいうえお\r\nＡＢＣＤＥ\r\n" : "\e$B$\"$$$&$($*\e(B\r\n\e$B#A#B#C#D#E\e(B\r\n"
+          body.encoded.should == expect
+        end
+      end
     end
   end
 end

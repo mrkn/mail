@@ -1,11 +1,19 @@
 # encoding: utf-8
 class String #:nodoc:
   def to_crlf
-    gsub(/\n|\r\n|\r/) { "\r\n" }
+    if defined?(Encoding) && !encoding.ascii_compatible?
+      dup.force_encoding('BINARY').to_crlf.force_encoding(encoding)
+    else
+      gsub(/\n|\r\n|\r/) { "\r\n" }
+    end
   end
 
   def to_lf
-    gsub(/\n|\r\n|\r/) { "\n" }
+    if defined?(Encoding) && !encoding.ascii_compatible?
+      dup.force_encoding('BINARY').to_lf.force_encoding(encoding)
+    else
+      gsub(/\n|\r\n|\r/) { "\n" }
+    end
   end
 
   if RUBY_VERSION >= '1.9'
