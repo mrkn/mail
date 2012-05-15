@@ -37,6 +37,14 @@ module Mail
       sorted.each { |p| self << p }
     end
 
+    if RUBY_VERSION >= '1.9.3'
+      alias __sort__ sort
+
+      def sort(&block)
+        self.class.new.replace __sort__(&block)
+      end
+    end
+
   private
 
     def get_order_value(part, order)
