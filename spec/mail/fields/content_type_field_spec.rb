@@ -616,7 +616,8 @@ describe Mail::ContentTypeField do
       string = "01 Quien Te Dij\221at. Pitbull.mp3"
       if RUBY_VERSION >= '1.9'
         string.force_encoding('SJIS')
-        result = %Q{Content-Type: application/octet-stream;\r\n\sfilename*=shift_jis'jp'01%20Quien%20Te%20Dij%91%61t.%20Pitbull.mp3\r\n}
+        charset_name = RUBY_VERSION < '1.9.3' ? 'shift_jis' : 'windows-31j'
+        result = %Q{Content-Type: application/octet-stream;\r\n\sfilename*=#{charset_name}'jp'01%20Quien%20Te%20Dij%91%61t.%20Pitbull.mp3\r\n}
       else
         storedkcode = $KCODE
         $KCODE = 'SJIS'
