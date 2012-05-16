@@ -8,6 +8,16 @@ class String #:nodoc:
     gsub(/\n|\r\n|\r/) { "\n" }
   end
 
+  if RUBY_VERSION >= '1.9'
+    def blank?
+      saved_encoding = encoding
+      force_encoding('BINARY')
+      self !~ /\S/
+    ensure
+      force_encoding(saved_encoding)
+    end
+  end
+
   unless method_defined?(:ascii_only?)
     # Provides all strings with the Ruby 1.9 method of .ascii_only? and
     # returns true or false

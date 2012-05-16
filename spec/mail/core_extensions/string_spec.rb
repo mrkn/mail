@@ -1,6 +1,54 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
 
 describe 'core_extensions/string' do
+
+  if RUBY_VERSION >= '1.9'
+    describe "blank?" do
+      context "for ASCII compatible string" do
+        specify "an empty string should be blank" do
+          "".should be_blank
+        end
+
+        specify '" " should be blank' do
+          " ".should be_blank
+        end
+
+        specify '"\t" should be blank' do
+          "\t".should be_blank
+        end
+
+        specify '"\n" should be blank' do
+          "\n".should be_blank
+        end
+
+        specify "'a' should not be blank" do
+          "a".should_not be_blank
+        end
+      end
+
+      context "for ISO-2022-JP string" do
+        specify "an empty string should be blank" do
+          "".encode('ISO-2022-JP').should be_blank
+        end
+
+        specify '" " should be blank' do
+          " ".encode('ISO-2022-JP').should be_blank
+        end
+
+        specify '"\t" should be blank' do
+          "\t".encode('ISO-2022-JP').should be_blank
+        end
+
+        specify '"\n" should be blank' do
+          "\n".encode('ISO-2022-JP').should be_blank
+        end
+
+        specify "'a' should not be blank" do
+          "a".encode('ISO-2022-JP').should_not be_blank
+        end
+      end
+    end
+  end
   
   describe "to_crlf" do
     
