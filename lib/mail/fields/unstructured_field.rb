@@ -44,6 +44,14 @@ module Mail
       @charset = val
     end
 
+    def encoding
+      @encoding
+    end
+
+    def encoding=(val)
+      @encoding = val
+    end
+
     def errors
       @errors
     end
@@ -126,7 +134,16 @@ module Mail
     end
 
     def fold(prepend = 0) # :nodoc:
-      encoding = @charset.to_s.upcase.gsub('_', '-')
+      case encoding || get_best_encoding(decoded.to_s)
+      when 'base64'
+        fold_by_base64(prepend)
+      else
+        fold_by_quoted_printable(prepend)
+      end
+    end
+
+    def fold_by_quoted_printable(prepend = 0) # :nodoc:
+      encoding = normalized_charset
       while !@unfolded_line.empty?
         encoded = false
         limit = 78 - prepend
@@ -176,6 +193,52 @@ module Mail
       value.gsub!(/\)/, '=29')
       value.gsub!(/\?/, '=3F')
       value.gsub!(/_/,  '=5F')
+    end
+
+    def fold_by_base64(prepend) # :nodoc:
+      decoded_string = decoded.to_s
+      should_encode  = decoded_string.not_ascii_only?
+      chars          = decoded_string.scan(/./)
+      encoding       = normalized_charset
+
+      @folded_line += chars.inject([""]) do |folded_lines, char|
+        last_line = folded_lines.last
+        trial_line = last_line + char
+        trial_line.encode!(charset) if defined?(Encoding) && charset
+        encoded_line = encode_by_base64(trial_line)
+        encoded_line, rest = *encoded_line.lines
+        limit = RFC5322_LINE_LIMITS - prepend
+        limit = limit - 7 - encoding.length if should_encode
+        if rest || encoded_line.length + 1 > limit
+          folded_lines << char
+          prepend = 0
+        else
+          last_line << char
+        end
+        folded_lines
+      end.map do |line|
+        line.encode!(charset) if defined?(Encoding) && charset
+        "=?#{encoding}?B?#{encode_by_base64(line)}?="
+      end
+    end
+
+    def encode_by_base64(value)
+      RubyVer.encode_base64(value).rstrip
+    end
+
+    def get_best_encoding(str)
+      target_encoding = Mail::Encodings.get_encoding('7bit')
+      target_encoding.get_best_compatible(encoding, str)
+    end
+
+    private
+
+    def normalized_charset
+      @charset.to_s.upcase.gsub('_', '-')
+    end
+
+    def only_printable_ascii?
+      self.value !~ /[^\x21-\x7e]/
     end
 
   end

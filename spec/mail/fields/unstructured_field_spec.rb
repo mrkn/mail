@@ -175,4 +175,71 @@ describe Mail::UnstructuredField do
       @field.encoded.should == expect
     end
   end
+
+  describe "unstructured field includes few non-ascii characters" do
+    let(:subject_text) { "This is NOT plain text US-ASCII - あ" }
+
+    context "charset is UTF-8" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'UTF-8'
+        expect = "Subject: =?UTF-8?Q?This_is_NOT_plain_text_US-ASCII_-_=E3=81=82?=\r\n"
+        @field.encoded.should == expect
+      end
+    end
+
+    context "charset is ISO-2022-JP" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'ISO-2022-JP'
+        if RUBY_VERSION >= '1.9'
+          expect = "Subject: =?ISO-2022-JP?Q?This_is_NOT_plain_text_US-ASCII_-_=1B$B$=22=1B=28B?=\r\n"
+        else
+          # TODO: fix for 1.8
+          expect = "Subject: =?ISO-2022-JP?Q?This_is_NOT_plain_text_US-ASCII_-_=E3=81=82?=\r\n"
+        end
+        @field.encoded.should == expect
+      end
+    end
+  end
+
+  describe "unstructured field almost consists of non-ascii characters" do
+    let(:subject_text) { "US-ASCII の plain text ではありません - かきくけこ" }
+
+    context "charset is UTF-8" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'UTF-8'
+        @field.encoding = 'base64'
+        expect = "Subject: =?UTF-8?B?VVMtQVNDSUkg44GuIHBsYWluIHRleHQg44Gn44Gv44GC44KK44G+44Gb?=\r\n =?UTF-8?B?44KTIC0g44GL44GN44GP44GR44GT?=\r\n"
+        @field.encoded.should == expect
+      end
+    end
+
+    context "charset is ISO-2022-JP" do
+      it "should encode in Base64" do
+        @field = Mail::UnstructuredField.new("Subject", subject_text)
+        @field.charset = 'ISO-2022-JP'
+        @field.encoding = 'base64'
+        if RUBY_VERSION >= '1.9'
+          expect = "Subject: =?ISO-2022-JP?B?VVMtQVNDSUkgGyRCJE4bKEIgcGxhaW4gdGV4dCA=?=\r\n =?ISO-2022-JP?B?GyRCJEckTyQiJGokXiQ7JHMbKEIgLSAbJEIkKyQtJC8kMSQzGyhC?=\r\n"
+        else
+          # TODO: fix for 1.8
+          expect = "Subject: =?ISO-2022-JP?B?VVMtQVNDSUkg44GuIHBsYWluIHRleHQg44Gn44Gv44GC44KK?=\r\n =?ISO-2022-JP?B?44G+44Gb44KTIC0g44GL44GN44GP44GR44GT?=\r\n"
+        end
+        @field.encoded.should == expect
+      end
+    end
+  end
+
+  describe "unstructured field initialized with B-encoded ISO-2022-JP string" do
+    let(:subject_text) { "=?ISO-2022-JP?B?GyRCJUYlOSVIJWEhPCVrJEAkaBsoQg==?=" }
+
+    it "should encode in Base64" do
+      @field = Mail::UnstructuredField.new("Subject", subject_text)
+      @field.charset = 'ISO-2022-JP'
+      @field.encoding = 'base64'
+      @field.encoded.should == "Subject: #{subject_text}\r\n"
+    end
+  end
 end
