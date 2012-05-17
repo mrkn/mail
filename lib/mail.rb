@@ -30,7 +30,7 @@ module Mail # :doc:
     RubyVer = Ruby18
   end
 
-  require 'mail/version'
+  require 'mail/version' unless defined?(Mail::VERSION)
 
   require 'mail/core_extensions/nil'
   require 'mail/core_extensions/string'
