@@ -18,11 +18,12 @@ class String #:nodoc:
 
   if RUBY_VERSION >= '1.9'
     def blank?
+      return dup.blank? if frozen?
       saved_encoding = encoding
       force_encoding('BINARY')
       self !~ /\S/
     ensure
-      force_encoding(saved_encoding)
+      force_encoding(saved_encoding) unless frozen?
     end
   end
 

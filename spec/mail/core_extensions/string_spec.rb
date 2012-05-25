@@ -47,6 +47,12 @@ describe 'core_extensions/string' do
           "a".encode('ISO-2022-JP').should_not be_blank
         end
       end
+
+      context "for frozen string" do
+        specify "an empty string should be blank" do
+          "".freeze.should be_blank
+        end
+      end
     end
   end
   
