@@ -151,7 +151,7 @@ module Mail
       if multipart?
         self.sort_parts!
         encoded_parts = parts.map { |p| p.encoded }
-        ([preamble] + encoded_parts).join(crlf_boundary) + end_boundary + epilogue.to_s
+        ([preamble] + encoded_parts).join(delimiter_with_crlf) + close_delimiter_with_crlf + epilogue.to_s
       else
         be = get_best_encoding(transfer_encoding)
         dec = Mail::Encodings::get_encoding(encoding)
@@ -275,13 +275,25 @@ module Mail
     end
     
     private
-    
-    def crlf_boundary
-      "\r\n\r\n--#{boundary}\r\n"
+
+    def dash_boundary
+      "--#{boundary}"
     end
-    
-    def end_boundary
-      "\r\n\r\n--#{boundary}--\r\n"
+
+    def delimiter
+      "\r\n#{dash_boundary}"
+    end
+
+    def close_delimiter
+      "#{delimiter}--"
+    end
+
+    def delimiter_with_crlf
+      "#{delimiter}\r\n"
+    end
+
+    def close_delimiter_with_crlf
+      "#{close_delimiter}\r\n"
     end
     
     def set_charset
