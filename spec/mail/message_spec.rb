@@ -229,7 +229,7 @@ describe Mail::Message do
 
     it "should set a raw source instance variable to equal the passed in message" do
       mail = Mail::Message.new(basic_email)
-      mail.raw_source.should eq basic_email.strip
+      mail.raw_source.should eq basic_email.lstrip
     end
 
     it "should set the raw source instance variable to '' if no message is passed in" do
@@ -251,7 +251,7 @@ describe Mail::Message do
 
     it "should give the body class the body to parse" do
       body = Mail::Body.new("email message")
-      Mail::Body.should_receive(:new).with("email message").and_return(body)
+      Mail::Body.should_receive(:new).with("email message\r\n").and_return(body)
       mail = Mail::Message.new(basic_email)
       mail.body #body calculates now lazy so need to ask for it
     end

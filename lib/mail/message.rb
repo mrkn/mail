@@ -122,7 +122,7 @@ module Mail
       if args.flatten.first.respond_to?(:each_pair)
         init_with_hash(args.flatten.first)
       else
-        init_with_string(args.flatten[0].to_s.strip)
+        init_with_string(args.flatten[0].to_s.lstrip)
       end
 
       if block_given?

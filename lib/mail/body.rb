@@ -257,12 +257,12 @@ module Mail
     
     def split!(boundary)
       self.boundary = boundary
-      parts = raw_source.split("--#{boundary}")
+      parts = raw_source.split(/(?:\r\n)?#{Regexp.escape dash_boundary}/)
       # Make the preamble equal to the preamble (if any)
       self.preamble = parts[0].to_s.strip
       # Make the epilogue equal to the epilogue (if any)
-      self.epilogue = parts[-1].to_s.sub('--', '').strip
-      parts[1...-1].to_a.each { |part| @parts << Mail::Part.new(part) }
+      self.epilogue = parts[-1].to_s.sub('--', '').lstrip
+      parts[1...-1].to_a.each { |part| @parts << Mail::Part.new(part.lstrip) }
       self
     end
     
