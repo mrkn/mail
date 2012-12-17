@@ -275,7 +275,7 @@ describe Mail::Message do
 
     it "should set a raw source instance variable to equal the passed in message" do
       mail = Mail::Message.new(basic_email)
-      mail.raw_source.should eq basic_email
+      mail.raw_source.should eq basic_email.lstrip
     end
 
     it "should set the raw source instance variable to '' if no message is passed in" do
