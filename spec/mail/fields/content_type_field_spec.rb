@@ -475,6 +475,16 @@ describe Mail::ContentTypeField do
       c.parameters.should eql({})
     end
 
+    it "should handle 'text/plain; charset=iso-2022-jp'" do
+      string = %q{text/plain; charset=iso-2022-jp}
+      c = Mail::ContentTypeField.new(string)
+      c.content_type.should eq 'text/plain'
+      c.main_type.should eq 'text'
+      c.sub_type.should eq 'plain'
+      c.parameters.should eql({"charset" => 'iso-2022-jp'})
+      c.charset.should eq 'iso-2022-jp'
+    end
+
     it "should handle 'text/plain; charset=ISO-8859-1'" do
       string = %q{text/plain; charset=ISO-8859-1}
       c = Mail::ContentTypeField.new(string)
@@ -482,6 +492,7 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'text'
       c.sub_type.should eq 'plain'
       c.parameters.should eql({"charset" => 'ISO-8859-1'})
+      c.charset.should eq 'ISO-8859-1'
     end
 
     it "should handle 'text/plain; charset=ISO-8859-1;'" do
@@ -491,6 +502,7 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'text'
       c.sub_type.should eq 'plain'
       c.parameters.should eql({"charset" => 'ISO-8859-1', "format" => 'flowed'})
+      c.charset.should eq 'ISO-8859-1'
     end
 
     it "should handle 'text/plain; charset=us-ascii;'" do
@@ -500,6 +512,7 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'text'
       c.sub_type.should eq 'plain'
       c.parameters.should eql({"charset" => 'us-ascii'})
+      c.charset.should eq 'us-ascii'
     end
 
     it "should handle 'text/plain; charset=US-ASCII; format=flowed'" do
@@ -509,6 +522,7 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'text'
       c.sub_type.should eq 'plain'
       c.parameters.should eql({"charset" => 'US-ASCII', "format" => 'flowed'})
+      c.charset.should eq 'US-ASCII'
     end
 
     it "should handle 'text/plain; charset=US-ASCII; format=flowed'" do
@@ -527,6 +541,7 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'text'
       c.sub_type.should eq 'plain'
       c.parameters.should eql({"charset" => 'utf-8'})
+      c.charset.should eq 'utf-8'
     end
 
     it "should handle 'text/plain; charset=utf-8'" do
@@ -536,6 +551,7 @@ describe Mail::ContentTypeField do
       c.main_type.should eq 'text'
       c.sub_type.should eq 'plain'
       c.parameters.should eql({"charset" => 'X-UNKNOWN'})
+      c.charset.should eq 'X-UNKNOWN'
     end
 
     it "should handle 'text/x-ruby-script;'" do

@@ -22,6 +22,7 @@ module Mail
       ensure_filename_quoted(value)
       super(CAPITALIZED_FIELD, value, charset)
       self.parse
+      self.charset = self.parameters['charset'] if self.parameters['charset']
       self
     end
 
