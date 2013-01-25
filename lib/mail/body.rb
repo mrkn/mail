@@ -257,17 +257,32 @@ module Mail
     
     def split!(boundary)
       self.boundary = boundary
-      parts = raw_source.split(/(?:\A|\r\n)#{Regexp.escape(dash_boundary)}(?=(?:--)?\s*$)/)
+      parts = raw_source.b.split(/(?:\A|\r\n)#{Regexp.escape(dash_boundary)}(?=(?:--)?\s*$)/)
+      if String.method_defined?(:force_encoding)
+        parts.each { |part| part.force_encoding(raw_source.encoding) }
+      end
       # Make the preamble equal to the preamble (if any)
       self.preamble = parts[0].to_s.strip
       # Make the epilogue equal to the epilogue (if any)
       self.epilogue = parts[-1].to_s.sub('--', '').lstrip
-      parts[1...-1].to_a.each { |part| @parts << Mail::Part.new(part.lstrip) }
+      if String.method_defined?(:force_encoding)
+        parts[1...-1].to_a.each { |part|
+          @parts << Mail::Part.new(part.force_encoding('UTF-8').lstrip.force_encoding(part.encoding))
+        }
+      else
+        parts[1...-1].to_a.each { |part| @parts << Mail::Part.new(part.lstrip) }
+      end
       self
     end
     
-    def only_us_ascii?
-      !(raw_source =~ /[^\x01-\x7f]/)
+    if String.method_defined?(:force_encoding)
+      def only_us_ascii?
+        !(raw_source.b =~ /[^\x01-\x7f]/)
+      end
+    else
+      def only_us_ascii?
+        !(raw_source =~ /[^\x01-\x7f]/)
+      end
     end
     
     def empty?

@@ -30,4 +30,14 @@ class String #:nodoc:
   unless method_defined?(:bytesize)
     alias :bytesize :length
   end
+
+  unless method_defined?(:b)
+    if method_defined?(:force_encoding)
+      def b
+        dup.force_encoding('ASCII-8BIT')
+      end
+    else
+      alias b dup
+    end
+  end
 end

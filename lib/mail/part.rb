@@ -100,14 +100,27 @@ module Mail
     end
     
     # A part may not have a header.... so, just init a body if no header
-    def parse_message
-      header_part, body_part = raw_source.split(/#{CRLF}#{WSP}*#{CRLF}/m, 2)
-      if header_part =~ HEADER_LINE
-        self.header = header_part
-        self.body   = body_part
-      else
-        self.header = "Content-Type: text/plain\r\n"
-        self.body   = raw_source
+    if RUBY_VERSION < '1.9'
+      def parse_message
+        header_part, body_part = raw_source.split(/#{CRLF}#{WSP}*#{CRLF}/m, 2)
+        if header_part =~ HEADER_LINE
+          self.header = header_part
+          self.body   = body_part
+        else
+          self.header = "Content-Type: text/plain\r\n"
+          self.body   = raw_source
+        end
+      end
+    else
+      def parse_message
+        header_part, body_part = raw_source.dup.force_encoding('BINARY').split(/#{CRLF}#{WSP}*#{CRLF}/m, 2)
+        if header_part =~ HEADER_LINE
+          self.header = header_part && header_part.force_encoding(raw_source.encoding)
+          self.body   = body_part && body_part.force_encoding(raw_source.encoding)
+        else
+          self.header = "Content-Type: text/plain\r\n"
+          self.body   = raw_source
+        end
       end
     end
     

@@ -1967,10 +1967,18 @@ module Mail
     #
     # Additionally, I allow for the case where someone might have put whitespace
     # on the "gap line"
-    def parse_message
-      header_part, body_part = raw_source.lstrip.split(/#{CRLF}#{CRLF}|#{CRLF}#{WSP}*#{CRLF}(?!#{WSP})/m, 2)
-      self.header = header_part
-      self.body   = body_part
+    if String.method_defined?(:force_encoding)
+      def parse_message
+        header_part, body_part = raw_source.b.lstrip.split(/#{CRLF}#{CRLF}|#{CRLF}#{WSP}*#{CRLF}(?!#{WSP})/m, 2)
+        self.header = header_part && header_part.force_encoding(raw_source.encoding)
+        self.body   = body_part && body_part.force_encoding(raw_source.encoding)
+      end
+    else
+      def parse_message
+        header_part, body_part = raw_source.lstrip.split(/#{CRLF}#{CRLF}|#{CRLF}#{WSP}*#{CRLF}(?!#{WSP})/m, 2)
+        self.header = header_part
+        self.body   = body_part
+      end
     end
 
     def raw_source=(value)
@@ -2005,10 +2013,16 @@ module Mail
     end
 
     def set_envelope_header
-      raw_string = raw_source.to_s
-      if match_data = raw_source.to_s.match(/\AFrom\s(#{TEXT}+)#{CRLF}/m)
-        set_envelope(match_data[1])
-        self.raw_source = raw_string.sub(match_data[0], "") 
+      src = raw_source.to_s
+      src = src.b if String.method_defined?(:force_encoding)
+      if match_data = src.match(/\AFrom\s(#{TEXT}+)#{CRLF}/m)
+        if String.method_defined?(:force_encoding)
+          set_envelope(match_data[1].force_encoding(raw_source.encoding))
+          self.raw_source = src.sub(match_data[0], "").force_encoding(raw_source.encoding)
+        else
+          set_envelope(match_data[1])
+          self.raw_source = src.sub(match_data[0], "")
+        end
       end
     end
 
