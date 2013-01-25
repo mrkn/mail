@@ -257,17 +257,34 @@ module Mail
     
     def split!(boundary)
       self.boundary = boundary
-      parts = raw_source.split(/(?:\r\n)?#{Regexp.escape dash_boundary}/)
+      if RUBY_VERSION < '1.9'
+        parts = raw_source.split(/(?:\r\n)?#{Regexp.escape dash_boundary}/)
+      else
+        parts = raw_source.dup.force_encoding('BINARY').split(/(?:\r\n)?#{Regexp.escape dash_boundary}/)
+        parts.each { |part| part.force_encoding(raw_source.encoding) }
+      end
       # Make the preamble equal to the preamble (if any)
       self.preamble = parts[0].to_s.strip
       # Make the epilogue equal to the epilogue (if any)
       self.epilogue = parts[-1].to_s.sub('--', '').lstrip
-      parts[1...-1].to_a.each { |part| @parts << Mail::Part.new(part.lstrip) }
+      if RUBY_VERSION < '1.9'
+        parts[1...-1].to_a.each { |part| @parts << Mail::Part.new(part.lstrip) }
+      else
+        parts[1...-1].to_a.each { |part|
+          @parts << Mail::Part.new(part.force_encoding('UTF-8').lstrip.force_encoding(part.encoding))
+        }
+      end
       self
     end
     
-    def only_us_ascii?
-      !(raw_source =~ /[^\x01-\x7f]/)
+    if RUBY_VERSION < '1.9'
+      def only_us_ascii?
+        !(raw_source =~ /[^\x01-\x7f]/)
+      end
+    else
+      def only_us_ascii?
+        !(raw_source.dup.force_encoding('BINARY') =~ /[^\x01-\x7f]/)
+      end
     end
     
     def empty?
